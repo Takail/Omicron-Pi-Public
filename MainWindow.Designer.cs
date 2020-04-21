@@ -121,6 +121,11 @@ namespace Omicron_Pi
             this.groupsAddButton = new System.Windows.Forms.Button();
             this.Groups = new System.Windows.Forms.ListBox();
             this.tabPage3 = new System.Windows.Forms.TabPage();
+            this.steamUrlLabel = new System.Windows.Forms.LinkLabel();
+            this.showSteamInfoCheckBox = new System.Windows.Forms.CheckBox();
+            this.enableSteamInfo = new System.Windows.Forms.Button();
+            this.steamNameLabel = new System.Windows.Forms.Label();
+            this.steamAvatar = new System.Windows.Forms.PictureBox();
             this.changeGroupCombo = new System.Windows.Forms.ComboBox();
             this.changeUserGroup = new System.Windows.Forms.Button();
             this.removeUser = new System.Windows.Forms.Button();
@@ -132,8 +137,8 @@ namespace Omicron_Pi
             this.saveCFGButton = new System.Windows.Forms.Button();
             this.startAgainButton = new System.Windows.Forms.Button();
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
-            this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
+            this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.tabControl.SuspendLayout();
             this.generalTabPage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
@@ -144,6 +149,7 @@ namespace Omicron_Pi
             ((System.ComponentModel.ISupportInitialize)(this.kickPowerNumUD)).BeginInit();
             this.permissionsBox.SuspendLayout();
             this.tabPage3.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.steamAvatar)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -178,7 +184,7 @@ namespace Omicron_Pi
             // 
             // pictureBox2
             // 
-            this.pictureBox2.Image = global::Omicron_Pi.Properties.Resources.omicrontype;
+            this.pictureBox2.Image = ((System.Drawing.Image)(resources.GetObject("pictureBox2.Image")));
             this.pictureBox2.Location = new System.Drawing.Point(12, 259);
             this.pictureBox2.Name = "pictureBox2";
             this.pictureBox2.Size = new System.Drawing.Size(202, 50);
@@ -607,6 +613,7 @@ namespace Omicron_Pi
             // 
             this.badgeNameTextBox.Font = new System.Drawing.Font("Noto Sans", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.badgeNameTextBox.Location = new System.Drawing.Point(148, 25);
+            this.badgeNameTextBox.MaxLength = 25;
             this.badgeNameTextBox.Name = "badgeNameTextBox";
             this.badgeNameTextBox.Size = new System.Drawing.Size(173, 22);
             this.badgeNameTextBox.TabIndex = 0;
@@ -1207,6 +1214,11 @@ namespace Omicron_Pi
             // 
             // tabPage3
             // 
+            this.tabPage3.Controls.Add(this.steamUrlLabel);
+            this.tabPage3.Controls.Add(this.showSteamInfoCheckBox);
+            this.tabPage3.Controls.Add(this.enableSteamInfo);
+            this.tabPage3.Controls.Add(this.steamNameLabel);
+            this.tabPage3.Controls.Add(this.steamAvatar);
             this.tabPage3.Controls.Add(this.changeGroupCombo);
             this.tabPage3.Controls.Add(this.changeUserGroup);
             this.tabPage3.Controls.Add(this.removeUser);
@@ -1217,10 +1229,64 @@ namespace Omicron_Pi
             this.tabPage3.Controls.Add(this.Users);
             this.tabPage3.Location = new System.Drawing.Point(4, 24);
             this.tabPage3.Name = "tabPage3";
-            this.tabPage3.Size = new System.Drawing.Size(1258, 828);
+            this.tabPage3.Size = new System.Drawing.Size(1104, 828);
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "Role Assignment";
             this.tabPage3.UseVisualStyleBackColor = true;
+            // 
+            // steamUrlLabel
+            // 
+            this.steamUrlLabel.AutoSize = true;
+            this.steamUrlLabel.Font = new System.Drawing.Font("Noto Sans", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.steamUrlLabel.Location = new System.Drawing.Point(199, 514);
+            this.steamUrlLabel.Name = "steamUrlLabel";
+            this.steamUrlLabel.Size = new System.Drawing.Size(105, 26);
+            this.steamUrlLabel.TabIndex = 67;
+            this.steamUrlLabel.TabStop = true;
+            this.steamUrlLabel.Text = "SteamURL";
+            this.steamUrlLabel.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.steamUrlLabel_LinkClicked);
+            // 
+            // showSteamInfoCheckBox
+            // 
+            this.showSteamInfoCheckBox.AutoSize = true;
+            this.showSteamInfoCheckBox.Location = new System.Drawing.Point(204, 256);
+            this.showSteamInfoCheckBox.Name = "showSteamInfoCheckBox";
+            this.showSteamInfoCheckBox.Size = new System.Drawing.Size(242, 19);
+            this.showSteamInfoCheckBox.TabIndex = 66;
+            this.showSteamInfoCheckBox.Text = "Show Steam Info. (Will slow things down)";
+            this.showSteamInfoCheckBox.UseVisualStyleBackColor = true;
+            this.showSteamInfoCheckBox.Visible = false;
+            this.showSteamInfoCheckBox.CheckedChanged += new System.EventHandler(this.showSteamInfoCheckBox_CheckedChanged);
+            // 
+            // enableSteamInfo
+            // 
+            this.enableSteamInfo.Location = new System.Drawing.Point(204, 253);
+            this.enableSteamInfo.Name = "enableSteamInfo";
+            this.enableSteamInfo.Size = new System.Drawing.Size(203, 23);
+            this.enableSteamInfo.TabIndex = 65;
+            this.enableSteamInfo.Text = "Enable Steam Info";
+            this.enableSteamInfo.UseVisualStyleBackColor = true;
+            this.enableSteamInfo.Click += new System.EventHandler(this.enableSteamInfo_Click);
+            // 
+            // steamNameLabel
+            // 
+            this.steamNameLabel.AutoSize = true;
+            this.steamNameLabel.Font = new System.Drawing.Font("Noto Sans", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.steamNameLabel.Location = new System.Drawing.Point(199, 488);
+            this.steamNameLabel.Name = "steamNameLabel";
+            this.steamNameLabel.Size = new System.Drawing.Size(128, 26);
+            this.steamNameLabel.TabIndex = 63;
+            this.steamNameLabel.Text = "Steam Name";
+            // 
+            // steamAvatar
+            // 
+            this.steamAvatar.Image = global::Omicron_Pi.Properties.Resources.omipilogo;
+            this.steamAvatar.Location = new System.Drawing.Point(204, 282);
+            this.steamAvatar.Name = "steamAvatar";
+            this.steamAvatar.Size = new System.Drawing.Size(203, 203);
+            this.steamAvatar.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.steamAvatar.TabIndex = 61;
+            this.steamAvatar.TabStop = false;
             // 
             // changeGroupCombo
             // 
@@ -1229,16 +1295,16 @@ namespace Omicron_Pi
             this.changeGroupCombo.FormattingEnabled = true;
             this.changeGroupCombo.Location = new System.Drawing.Point(204, 154);
             this.changeGroupCombo.Name = "changeGroupCombo";
-            this.changeGroupCombo.Size = new System.Drawing.Size(191, 23);
+            this.changeGroupCombo.Size = new System.Drawing.Size(203, 23);
             this.changeGroupCombo.TabIndex = 60;
             // 
             // changeUserGroup
             // 
             this.changeUserGroup.Location = new System.Drawing.Point(204, 183);
             this.changeUserGroup.Name = "changeUserGroup";
-            this.changeUserGroup.Size = new System.Drawing.Size(191, 23);
+            this.changeUserGroup.Size = new System.Drawing.Size(203, 23);
             this.changeUserGroup.TabIndex = 59;
-            this.changeUserGroup.Text = "Change Selected User Role";
+            this.changeUserGroup.Text = "Change Selected User Selected Role";
             this.changeUserGroup.UseVisualStyleBackColor = true;
             this.changeUserGroup.Click += new System.EventHandler(this.changeUserGroup_Click);
             // 
@@ -1246,7 +1312,7 @@ namespace Omicron_Pi
             // 
             this.removeUser.Location = new System.Drawing.Point(204, 83);
             this.removeUser.Name = "removeUser";
-            this.removeUser.Size = new System.Drawing.Size(191, 23);
+            this.removeUser.Size = new System.Drawing.Size(203, 23);
             this.removeUser.TabIndex = 58;
             this.removeUser.Text = "Remove selected users role";
             this.removeUser.UseVisualStyleBackColor = true;
@@ -1256,7 +1322,7 @@ namespace Omicron_Pi
             // 
             this.addUser.Location = new System.Drawing.Point(204, 54);
             this.addUser.Name = "addUser";
-            this.addUser.Size = new System.Drawing.Size(191, 23);
+            this.addUser.Size = new System.Drawing.Size(203, 23);
             this.addUser.TabIndex = 57;
             this.addUser.Text = "Add a user to this role";
             this.addUser.UseVisualStyleBackColor = true;
@@ -1288,7 +1354,7 @@ namespace Omicron_Pi
             this.assignmentGroupsCombo.FormattingEnabled = true;
             this.assignmentGroupsCombo.Location = new System.Drawing.Point(204, 25);
             this.assignmentGroupsCombo.Name = "assignmentGroupsCombo";
-            this.assignmentGroupsCombo.Size = new System.Drawing.Size(191, 23);
+            this.assignmentGroupsCombo.Size = new System.Drawing.Size(203, 23);
             this.assignmentGroupsCombo.TabIndex = 2;
             this.assignmentGroupsCombo.SelectedIndexChanged += new System.EventHandler(this.assignmentGroupsCombo_SelectedIndexChanged);
             // 
@@ -1301,6 +1367,7 @@ namespace Omicron_Pi
             this.Users.Name = "Users";
             this.Users.Size = new System.Drawing.Size(192, 796);
             this.Users.TabIndex = 1;
+            this.Users.SelectedIndexChanged += new System.EventHandler(this.Users_SelectedIndexChanged);
             // 
             // saveCFGButton
             // 
@@ -1329,9 +1396,16 @@ namespace Omicron_Pi
             this.openFileDialog1.FileName = "config_remoteadmin.txt";
             this.openFileDialog1.FileOk += new System.ComponentModel.CancelEventHandler(this.openFileDialog1_FileOk);
             // 
+            // saveFileDialog1
+            // 
+            this.saveFileDialog1.DefaultExt = "txt";
+            this.saveFileDialog1.FileName = "config_remoteadmin";
+            this.saveFileDialog1.Filter = "txt files (*.txt)|*.txt|All files (*.*)|*.*";
+            this.saveFileDialog1.FileOk += new System.ComponentModel.CancelEventHandler(this.saveFileDialog1_FileOk);
+            // 
             // pictureBox1
             // 
-            this.pictureBox1.Image = global::Omicron_Pi.Properties.Resources.omicronpifull;
+            this.pictureBox1.Image = ((System.Drawing.Image)(resources.GetObject("pictureBox1.Image")));
             this.pictureBox1.Location = new System.Drawing.Point(12, 865);
             this.pictureBox1.Name = "pictureBox1";
             this.pictureBox1.Size = new System.Drawing.Size(126, 28);
@@ -1341,13 +1415,6 @@ namespace Omicron_Pi
             this.pictureBox1.Click += new System.EventHandler(this.PictureBox1_Click);
             this.pictureBox1.MouseEnter += new System.EventHandler(this.PictureBox1_MouseEnter);
             this.pictureBox1.MouseLeave += new System.EventHandler(this.PictureBox1_MouseLeave);
-            // 
-            // saveFileDialog1
-            // 
-            this.saveFileDialog1.DefaultExt = "txt";
-            this.saveFileDialog1.FileName = "config_remoteadmin";
-            this.saveFileDialog1.Filter = "txt files (*.txt)|*.txt|All files (*.*)|*.*";
-            this.saveFileDialog1.FileOk += new System.ComponentModel.CancelEventHandler(this.saveFileDialog1_FileOk);
             // 
             // Form1
             // 
@@ -1381,6 +1448,7 @@ namespace Omicron_Pi
             this.permissionsBox.PerformLayout();
             this.tabPage3.ResumeLayout(false);
             this.tabPage3.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.steamAvatar)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
 
@@ -1479,18 +1547,23 @@ namespace Omicron_Pi
         private Button changeUserGroup;
         private Button removeUser;
         private Button addUser;
-        private TabPage generalTabPage;
-        private Button createNewConfigButton;
-        private Button openExistingConfigButton;
         private OpenFileDialog openFileDialog1;
+        private SaveFileDialog saveFileDialog1;
+        private Button deselectAllButton;
+        private Button selectAllButton;
+        private TabPage generalTabPage;
         private PictureBox pictureBox2;
         private Label label43;
         private Label label42;
         private Label label41;
         private Label label40;
-        private SaveFileDialog saveFileDialog1;
-        private Button deselectAllButton;
-        private Button selectAllButton;
+        private Button createNewConfigButton;
+        private Button openExistingConfigButton;
+        private PictureBox steamAvatar;
+        private Label steamNameLabel;
+        private Button enableSteamInfo;
+        private CheckBox showSteamInfoCheckBox;
+        private LinkLabel steamUrlLabel;
     }
 }
 

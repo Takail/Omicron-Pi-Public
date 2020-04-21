@@ -6,7 +6,11 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Windows.Forms;
-using System.Security.AccessControl;
+using YamlDotNet.Serialization.TypeResolvers;
+using System.Globalization;
+using System.Net;
+using Newtonsoft.Json;
+using Omicron_Pi.Properties;
 
 namespace Omicron_Pi
 {
@@ -23,6 +27,7 @@ namespace Omicron_Pi
         Dictionary<string, string> usersList = new Dictionary<string, string>();
         Dictionary<string, List<string>> permissionsDict = new Dictionary<string, List<string>>();
         Dictionary<string, bool> globalBadgeOptions = new Dictionary<string, bool>();
+        private string steamApiKey;
 
         string finalConfig;
         Group selectedGroup;
@@ -34,7 +39,7 @@ namespace Omicron_Pi
         }
 
         // Make pictures clickable and show hand mouse on hover 
-        private void PictureBox1_Click(object sender, EventArgs e) => System.Diagnostics.Process.Start("https://github.com/takail/omicron-pi");
+        private void PictureBox1_Click(object sender, EventArgs e) => System.Diagnostics.Process.Start("https://github.com/takail/omicron-pi-public");
         private void PictureBox1_MouseEnter(object sender, EventArgs e) => Cursor = Cursors.Hand;
         private void PictureBox1_MouseLeave(object sender, EventArgs e) => Cursor = Cursors.Arrow;
 
@@ -48,6 +53,13 @@ namespace Omicron_Pi
         /// </summary>
         private void initialize(string filePath)
         {
+            //If a SteamAPIKey is present save it
+            if (File.Exists("steamapikey"))
+            {
+                steamApiKey = File.ReadAllText("steamapikey");
+                enableSteamInfo.Hide();
+                showSteamInfoCheckBox.Show();
+            }
             //Collapse General page and open other options pages.
             foreach (TabPage page in savedTabPages)
             {
@@ -83,7 +95,7 @@ namespace Omicron_Pi
             for (; ; )
             {
                 if (!configFileArray[rolesPos].Contains("-")) break;
-                var groupName = configFileArray[rolesPos].Remove(0, 3).TrimEnd();
+                string groupName = configFileArray[rolesPos].Remove(0, 3).TrimEnd();
                 Groups.Items.Add(groupName);
                 assignmentGroupsCombo.Items.Add(groupName);
                 changeGroupCombo.Items.Add(groupName);
@@ -124,13 +136,13 @@ namespace Omicron_Pi
             }
 
             //Define Group Paramaters
-            foreach (var group in groupList)
+            foreach (Group group in groupList)
             {
                 groupNameList.Add(group.name);
                 group.badge = configFileArray.First(i => i.Contains(group.name + "_badge")).Split(':')[1].Remove(0, 1);
                 group.badgeColour = configFileArray.First(i => i.Contains(group.name + "_color")).Split(':')[1].Remove(0, 1);
-                group.kickPower = int.TryParse(configFileArray.First(i => i.Contains(group.name + "_kick_power")).Split(':')[1].Remove(0, 1), out var a) ? a : 0;
-                group.requiredKickPower = int.TryParse(configFileArray.First(i => i.Contains(group.name + "_required_kick_power")).Split(':')[1].Remove(0, 1), out var b) ? b : 0;
+                group.kickPower = int.TryParse(configFileArray.First(i => i.Contains(group.name + "_kick_power")).Split(':')[1].Remove(0, 1), out int a) ? a : 0;
+                group.requiredKickPower = int.TryParse(configFileArray.First(i => i.Contains(group.name + "_required_kick_power")).Split(':')[1].Remove(0, 1), out int b) ? b : 0;
                 group.badgeCover = bool.TryParse(configFileArray.First(i => i.Contains(group.name + "_cover")).Split(':')[1].Remove(0, 1), out bool x) ? x : true;
                 group.badgeHidden = bool.TryParse(configFileArray.First(i => i.Contains(group.name + "_hidden")).Split(':')[1].Remove(0, 1), out bool y) ? y : false;
             }
@@ -166,7 +178,7 @@ namespace Omicron_Pi
                 usersList.Add(userID, userGroup);
                 membersPos++;
             }
-        }        
+        }
 
         private void Groups_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -179,7 +191,7 @@ namespace Omicron_Pi
             reqKickPowerNumUD.Value = selectedGroup.requiredKickPower;
             badgeColourComboBox.SelectedItem = char.ToUpper(selectedGroup.badgeColour[0]) + selectedGroup.badgeColour.Substring(1).Replace(" ", "_");
             StringBuilder strb = new StringBuilder();
-            foreach (var x in permissionsDict)
+            foreach (KeyValuePair<string, List<string>> x in permissionsDict)
             {
                 strb.AppendLine(x.Key + x.Value.FirstOrDefault());
             }
@@ -207,7 +219,7 @@ namespace Omicron_Pi
 
         private void GroupsRemoveButton_Click(object sender, EventArgs e)
         {
-            var confirmResult = MessageBox.Show($"Are you want to delete the {Groups.SelectedItem} rank?\nThis cannot be undone.", "Confirm Deletion", MessageBoxButtons.YesNo);
+            DialogResult confirmResult = MessageBox.Show($"Are you want to delete the {Groups.SelectedItem} rank?\nThis cannot be undone.", "Confirm Deletion", MessageBoxButtons.YesNo);
             if (confirmResult == DialogResult.Yes)
             {
                 if (Groups.Items.Count == 1)
@@ -215,29 +227,29 @@ namespace Omicron_Pi
                     MessageBox.Show("You can't have less than 1 group");
                     return;
                 }
-                int newIndex = Groups.SelectedIndex - 1 == -1 ? Groups.SelectedIndex + 1 : Groups.SelectedIndex - 1;
-                groupNameList.Remove((string)Groups.SelectedItem);
-                deleteGroup(Groups.SelectedItem);
+                int newIndex = Groups.SelectedIndex <= 0 ? 1 : Groups.SelectedIndex - 1;
+                string itemToRemove = (string)Groups.SelectedItem;
+                groupNameList.Remove(itemToRemove);                
                 Groups.SelectedIndex = newIndex;
-            }
-        }
+                groupList.Remove(groupList.First(i => i.name == itemToRemove));
+                foreach (var perm in permissionsDict)
+                {
+                    if (perm.Value.Contains(itemToRemove))
+                        perm.Value.Remove(itemToRemove);
+                }
+                foreach(KeyValuePair<string, string> x in usersList.ToList().FindAll(i => i.Value == itemToRemove))
+                {
+                    usersList.Remove(x.Key);
+                }
 
-        private async Task deleteGroup(object item)
-        {
-            await Task.Delay(TimeSpan.FromMilliseconds(2));
-            groupList.Remove(groupList.First(i => i.name == (string)item));
-            foreach(var perm in permissionsDict)
-            {
-                if (perm.Value.Contains((string)item))
-                    perm.Value.Remove((string)item);
+                Groups.Items.Remove(itemToRemove);
             }
-            Groups.Items.Remove(item);
         }
 
         private void GroupsAddButton_Click(object sender, EventArgs e)
         {
             Groups.BeginUpdate();
-            var newItem = Groups.Items.Add($"newgroup{newGroupNo}");
+            int newItem = Groups.Items.Add($"newgroup{newGroupNo}");
             Groups.EndUpdate();
             groupList.Add(new Group
             {
@@ -287,7 +299,7 @@ namespace Omicron_Pi
                 strb.AppendLine($" - {member.Key}: {member.Value}");
             }
             strb.AppendLine();
-            foreach (var option in globalBadgeOptions)
+            foreach (KeyValuePair<string, bool> option in globalBadgeOptions)
             {
                 strb.AppendLine($"{option.Key}: {option.Value.ToString().ToLower()}");
             }
@@ -310,7 +322,7 @@ namespace Omicron_Pi
             }
             strb.AppendLine();
             strb.AppendLine("Permissions:");
-            foreach (var perm in permissionsDict)
+            foreach (KeyValuePair<string, List<string>> perm in permissionsDict)
             {
                 strb.AppendLine($" - {perm.Key}: [{string.Join(", ", perm.Value)}]");
             }
@@ -318,20 +330,18 @@ namespace Omicron_Pi
             if(configFilePath == @".\TemplateConfig\DO NOT EDIT THIS FILE.txt")
             {
                 finalConfig = strb.ToString();
-                MessageBox.Show(finalConfig);
                 saveFileDialog1.ShowDialog();                
                 return;
             }
             File.WriteAllText(configFilePath + ".backup", configFile);
             File.WriteAllText(configFilePath, strb.ToString());
-            MessageBox.Show("Your new config has been saved to file location you chose the existing config and a backup of the original config has been created. Thank you for using Omicon Pi.");
+            MessageBox.Show("Your new config has been saved to file location you chose the existing config and a backup of the original config has been created. Thank you for using Omicron Pi.");
         }
 
         private void saveFileDialog1_FileOk(object sender, CancelEventArgs e)
         {
-            MessageBox.Show(finalConfig);
             File.WriteAllText(saveFileDialog1.FileName, finalConfig);
-            MessageBox.Show("Your new config has been saved to file location you chose the existing config and a backup of the original config has been created. Thank you for using Omicon Pi.");
+            MessageBox.Show("Your new config has been saved. Thank you for using Omicron Pi.");
         }
 
         private void badgeNameTextBox_TextChanged(object sender, EventArgs e)
@@ -400,7 +410,7 @@ namespace Omicron_Pi
                         MessageBox.Show("A rank with that name already exists. Please choose a different name");
                         continue;
                     }
-                    foreach(KeyValuePair<string, List<string>> perm in permissionsDict)
+                    foreach (KeyValuePair<string, List<string>> perm in permissionsDict)
                     {
                         if(perm.Value.Contains(listBox.SelectedItem))
                         {
@@ -457,7 +467,7 @@ namespace Omicron_Pi
 
         private void startAgainButton_Click(object sender, EventArgs e)
         {
-            var confirmResult = MessageBox.Show($"Are you want to start again?\nThis cannot be undone.", "Please Confirm.", MessageBoxButtons.YesNo);
+            DialogResult confirmResult = MessageBox.Show($"Are you want to start again?\nThis cannot be undone.", "Please Confirm.", MessageBoxButtons.YesNo);
             if (confirmResult == DialogResult.Yes)
             {
                 groupList.Clear();
@@ -500,8 +510,14 @@ namespace Omicron_Pi
                     MessageBox.Show($"You didnt include a discriminator. Please add either @steam @discord or @northwood at the end of the ID depending on the ID type. Eg. 76561197960287930@steam");
                     break;
                 }
+                if(Globals.inputResult.Contains("@steam") && getSteamInfo(Globals.inputResult.Split('@')[0]) == null)
+                {
+                    MessageBox.Show($"That SteamID doesnt exist. Please try again.");
+                    continue;
+                }
                 usersList.Add(Globals.inputResult, (string)assignmentGroupsCombo.SelectedItem);
                 Users.Items.Add(Globals.inputResult);
+                Users.SelectedItem = Globals.inputResult;
                 break;
             }            
         }
@@ -556,10 +572,102 @@ namespace Omicron_Pi
         {
             StringBuilder strb = new StringBuilder();
             strb.AppendLine("Permissions:");
-            foreach (var perm in permissionsDict)
+            foreach (KeyValuePair<string, List<string>> perm in permissionsDict)
             {
                 strb.AppendLine($" - {perm.Key}: [{string.Join(", ", perm.Value)}]");
             }
+        }
+
+        private void Users_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(steamApiKey) && showSteamInfoCheckBox.Checked)
+            {
+                ListBox lb = sender as ListBox;
+                if (((string)lb.SelectedItem).Length != 23)
+                {
+                    steamAvatar.Image = Resources.omipilogo;
+                    steamUrlLabel.Text = "";
+                    steamNameLabel.Text = "";
+                    return;
+                }
+                Player player = getSteamInfo(((string)lb.SelectedItem).Split('@')[0]);
+                steamAvatar.ImageLocation = player.avatarfull;
+                steamNameLabel.Text = player.personaname;
+                steamUrlLabel.Text = player.profileurl;
+            }
+        }
+
+        private Player getSteamInfo(string steamid, string key = "")
+        {
+            if (string.IsNullOrEmpty(key)) key = steamApiKey;
+            string ApiEndPoint = string.Format($"http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={key}&steamids={steamid}");
+            WebRequest request = WebRequest.Create(ApiEndPoint);
+            request.Method = "GET";
+            WebResponse response = null;
+            try
+            {
+                response = request.GetResponse();
+            }
+            catch(WebException e)
+            {
+                if(((HttpWebResponse)e.Response).StatusCode.ToString() == "Forbidden")
+                    return null;
+            }
+            Stream stream = response.GetResponseStream();
+            StreamReader reader = new StreamReader(stream);
+            string content = reader.ReadToEnd();
+            reader.Close();
+            response.Close();
+
+            var x = JsonConvert.DeserializeObject<RootObject>(content);            
+            return x.response.players.Count > 0 ? x.response.players.First() : null;
+        }
+        private void enableSteamInfo_Click(object sender, EventArgs e)
+        {
+            for (; ; )
+            {
+                InputDlg frm = new InputDlg();
+                Globals.inputType = "steamAPIKey";
+                frm.ShowDialog();
+                if (frm.DialogResult == DialogResult.Cancel) break;
+                if (getSteamInfo("76561197960287930", Globals.inputResult) == null)
+                {
+                    MessageBox.Show($"The SteamAPI key you entered is invalid. Please try again.");
+                    continue;
+                }
+                File.WriteAllText("steamapikey", Globals.inputResult);
+                steamApiKey = Globals.inputResult;
+                enableSteamInfo.Hide();
+                showSteamInfoCheckBox.Show();
+                showSteamInfoCheckBox.Checked = true;
+                break;
+            }
+        }
+
+        private void showSteamInfoCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            if(!((CheckBox)sender).Checked)
+            {
+                steamAvatar.Image = Resources.omipilogo;
+                steamUrlLabel.Text = "";
+                steamNameLabel.Text = "";
+            }
+            else
+            {
+                if (((string)Users.SelectedItem).Length == 23)
+                {
+                    Player player = getSteamInfo(((string)Users.SelectedItem).Split('@')[0]);
+                    steamAvatar.ImageLocation = player.avatarfull;
+                    steamNameLabel.Text = player.personaname;
+                    steamUrlLabel.Text = player.profileurl;
+                }
+            }
+        }
+
+        private void steamUrlLabel_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            if(Uri.IsWellFormedUriString(((LinkLabel)sender).Text, UriKind.Absolute))
+                System.Diagnostics.Process.Start(((LinkLabel)sender).Text);
         }
     }
 }

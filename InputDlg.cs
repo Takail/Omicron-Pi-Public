@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -20,7 +21,10 @@ namespace Omicron_Pi
 
         private void button1_Click(object sender, EventArgs e)
         {
-            Globals.inputResult = textBox1.Text.ToLower();
+            if(Globals.inputResult.Length == 32)
+                Globals.inputResult = textBox1.Text;
+            else
+                Globals.inputResult = textBox1.Text.ToLower();
             DialogResult = DialogResult.OK;
             Close();
         }
@@ -31,19 +35,27 @@ namespace Omicron_Pi
             Close();
         }
 
-        private void NewNameDlg_Load(object sender, EventArgs e)
+        private void inputDlg_Load(object sender, EventArgs e)
         {
-            if (Globals.inputType == "role")
+            string textToFill = "";
+            switch (Globals.inputType)
             {
-                Text = "Please enter a new role name";
-                label1.Text = "Please enter a new role name";
-                textBox1.Text = Globals.inputResult;
+                case "role":
+                    textToFill = "Please enter a new role name";
+                    break;
+                case "userid":
+                    textToFill = "Please enter a new userid";
+                    Globals.inputResult = "";
+                    break;
+                case "steamAPIKey":
+                    textToFill = "Please your SteamAPI key.";
+                    helpButton.Show();
+                    Globals.inputResult = "";
+                    break;
             }
-            else
-            {
-                Text = "Please enter a new userid";
-                label1.Text = "Please enter a new userid";
-            }
+            Text = textToFill;
+            label1.Text = textToFill;
+            textBox1.Text = Globals.inputResult;
         }
 
         private void textBox1_KeyPress(object sender, KeyPressEventArgs e)
@@ -54,6 +66,14 @@ namespace Omicron_Pi
                 Globals.inputResult = textBox1.Text.ToLower();
                 DialogResult = DialogResult.OK;
                 Close();
+            }
+        }
+
+        private void helpButton_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show("Would you like to open the webpage where you can get your SteamAPIKey?", "", MessageBoxButtons.YesNo, MessageBoxIcon.Asterisk) == DialogResult.Yes)
+            {
+                System.Diagnostics.Process.Start("https://steamcommunity.com/dev/apikey");
             }
         }
     }

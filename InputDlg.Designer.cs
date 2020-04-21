@@ -33,6 +33,7 @@
             this.button2 = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.textBox1 = new System.Windows.Forms.TextBox();
+            this.helpButton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // button1
@@ -63,14 +64,27 @@
             this.label1.Size = new System.Drawing.Size(147, 13);
             this.label1.TabIndex = 2;
             this.label1.Text = "Please enter a new role name";
+            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // textBox1
             // 
             this.textBox1.Location = new System.Drawing.Point(35, 40);
+            this.textBox1.MaxLength = 35;
             this.textBox1.Name = "textBox1";
             this.textBox1.Size = new System.Drawing.Size(240, 20);
             this.textBox1.TabIndex = 0;
             this.textBox1.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.textBox1_KeyPress);
+            // 
+            // helpButton
+            // 
+            this.helpButton.Location = new System.Drawing.Point(119, 66);
+            this.helpButton.Name = "helpButton";
+            this.helpButton.Size = new System.Drawing.Size(75, 23);
+            this.helpButton.TabIndex = 3;
+            this.helpButton.Text = "Help";
+            this.helpButton.UseVisualStyleBackColor = true;
+            this.helpButton.Visible = false;
+            this.helpButton.Click += new System.EventHandler(this.helpButton_Click);
             // 
             // InputDlg
             // 
@@ -78,6 +92,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(313, 105);
             this.ControlBox = false;
+            this.Controls.Add(this.helpButton);
             this.Controls.Add(this.textBox1);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.button2);
@@ -88,7 +103,7 @@
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Please Enter a New Name";
-            this.Load += new System.EventHandler(this.NewNameDlg_Load);
+            this.Load += new System.EventHandler(this.inputDlg_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -100,5 +115,6 @@
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.Button helpButton;
     }
 }
