@@ -1,14 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using YamlDotNet.Core.Tokens;
 
 namespace Omicron_Pi
 {
@@ -19,17 +10,17 @@ namespace Omicron_Pi
             InitializeComponent();
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void okButton_Click(object sender, EventArgs e)
         {
             if(Globals.inputResult.Length == 32)
-                Globals.inputResult = textBox1.Text;
+                Globals.inputResult = inputBox.Text;
             else
-                Globals.inputResult = textBox1.Text.ToLower();
+                Globals.inputResult = inputBox.Text.ToLower();
             DialogResult = DialogResult.OK;
             Close();
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void cancelButton_Click(object sender, EventArgs e)
         {
             DialogResult = DialogResult.Cancel;
             Close();
@@ -55,15 +46,15 @@ namespace Omicron_Pi
             }
             Text = textToFill;
             label1.Text = textToFill;
-            textBox1.Text = Globals.inputResult;
+            inputBox.Text = Globals.inputResult;
         }
 
-        private void textBox1_KeyPress(object sender, KeyPressEventArgs e)
+        private void inputBox_KeyPress(object sender, KeyPressEventArgs e)
         {
             if(e.KeyChar == 13)
             {
                 e.Handled = true;
-                Globals.inputResult = textBox1.Text.ToLower();
+                Globals.inputResult = inputBox.Text.ToLower();
                 DialogResult = DialogResult.OK;
                 Close();
             }

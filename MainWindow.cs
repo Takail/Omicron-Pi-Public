@@ -3,11 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.IO;
 using System.Windows.Forms;
-using YamlDotNet.Serialization.TypeResolvers;
-using System.Globalization;
 using System.Net;
 using Newtonsoft.Json;
 using Omicron_Pi.Properties;
@@ -38,15 +35,20 @@ namespace Omicron_Pi
             InitializeComponent();            
         }
 
-        // Make pictures clickable and show hand mouse on hover 
-        private void PictureBox1_Click(object sender, EventArgs e) => System.Diagnostics.Process.Start("https://github.com/takail/omicron-pi-public");
-        private void PictureBox1_MouseEnter(object sender, EventArgs e) => Cursor = Cursors.Hand;
-        private void PictureBox1_MouseLeave(object sender, EventArgs e) => Cursor = Cursors.Arrow;
+        private void Form1_Shown(object sender, EventArgs e)
+        {
+            //Hide tabs that rent General
+            foreach (TabPage tab in tabControl.TabPages)
+            {
+                if (tab == tabControl.TabPages[0]) continue;
+                savedTabPages.Add(tab);
+                tabControl.TabPages.Remove(tab);
+            }
 
-        private void PictureBox2_Click(object sender, EventArgs e) => System.Diagnostics.Process.Start("https://github.com/k0vac/omicron");
-        private void PictureBox2_MouseEnter(object sender, EventArgs e) => Cursor = Cursors.Hand;
-        private void PictureBox2_MouseLeave(object sender, EventArgs e) => Cursor = Cursors.Arrow;
-
+            //Disable save and start again buttons untill a config file is chosen.
+            saveCFGButton.Enabled = false;
+            startAgainButton.Enabled = false;
+        }
 
         /// <summary>
         /// Open options tabs and close the General Tab then populate opeions objects
@@ -180,6 +182,24 @@ namespace Omicron_Pi
             }
         }
 
+
+        private void globalBadgeOptionChanged(object sender, EventArgs e)
+        {
+            CheckBox s = sender as CheckBox;
+            globalBadgeOptions[s.Name] = s.Checked;
+        }
+
+        #region Picture box methods
+        private void PictureBox1_Click(object sender, EventArgs e) => System.Diagnostics.Process.Start("https://github.com/takail/omicron-pi-public");
+        private void PictureBox1_MouseEnter(object sender, EventArgs e) => Cursor = Cursors.Hand;
+        private void PictureBox1_MouseLeave(object sender, EventArgs e) => Cursor = Cursors.Arrow;
+
+        private void PictureBox2_Click(object sender, EventArgs e) => System.Diagnostics.Process.Start("https://github.com/k0vac/omicron");
+        private void PictureBox2_MouseEnter(object sender, EventArgs e) => Cursor = Cursors.Hand;
+        private void PictureBox2_MouseLeave(object sender, EventArgs e) => Cursor = Cursors.Arrow;
+        #endregion
+
+        #region Group box methods
         private void Groups_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (Groups.SelectedItem == null) return;
@@ -206,15 +226,36 @@ namespace Omicron_Pi
             }
         }
 
-        private static void restartProgram(TabControl tabControl)
-        {            
-            foreach (TabPage tab in tabControl.TabPages)
+        private void Groups_DoubleClick(object sender, EventArgs e)
+        {
+            ListBox listBox = sender as ListBox;
+            int index = listBox.IndexFromPoint(((MouseEventArgs)e).Location);
+            if (index != ListBox.NoMatches)
             {
-                savedTabPages.Add(tab);
-                tabControl.TabPages.Remove(tab);
+                InputDlg frm = new InputDlg();
+                Globals.inputResult = (string)listBox.SelectedItem;
+                Globals.inputType = "role";
+                frm.ShowDialog();
+                if (frm.DialogResult == DialogResult.Cancel) return;
+                if (groupList.Any(i => i.name == Globals.inputResult))
+                {
+                    MessageBox.Show("A rank with that name already exists. Please choose a different name");
+                    Groups_DoubleClick(listBox, null);
+                    return;
+                }
+                foreach (KeyValuePair<string, List<string>> perm in permissionsDict)
+                {
+                    if (perm.Value.Contains(listBox.SelectedItem))
+                    {
+                        perm.Value.Remove((string)listBox.SelectedItem);
+                        perm.Value.Add(Globals.inputResult);
+                    }
+                }
+                groupNameList.Remove(groupNameList.First(i => i == (string)listBox.SelectedItem));
+                groupNameList.Add(Globals.inputResult);
+                groupList[groupList.IndexOf(groupList.First(i => i.name == (string)listBox.SelectedItem))].name = Globals.inputResult;
+                Groups.Items[listBox.SelectedIndex] = Globals.inputResult;
             }
-            tabControl.TabPages.Add(savedTabPages[0]);
-            savedTabPages.Remove(savedTabPages[0]);
         }
 
         private void GroupsRemoveButton_Click(object sender, EventArgs e)
@@ -229,7 +270,7 @@ namespace Omicron_Pi
                 }
                 int newIndex = Groups.SelectedIndex <= 0 ? 1 : Groups.SelectedIndex - 1;
                 string itemToRemove = (string)Groups.SelectedItem;
-                groupNameList.Remove(itemToRemove);                
+                groupNameList.Remove(itemToRemove);
                 Groups.SelectedIndex = newIndex;
                 groupList.Remove(groupList.First(i => i.name == itemToRemove));
                 foreach (var perm in permissionsDict)
@@ -237,7 +278,7 @@ namespace Omicron_Pi
                     if (perm.Value.Contains(itemToRemove))
                         perm.Value.Remove(itemToRemove);
                 }
-                foreach(KeyValuePair<string, string> x in usersList.ToList().FindAll(i => i.Value == itemToRemove))
+                foreach (KeyValuePair<string, string> x in usersList.ToList().FindAll(i => i.Value == itemToRemove))
                 {
                     usersList.Remove(x.Key);
                 }
@@ -287,6 +328,35 @@ namespace Omicron_Pi
             groupNameList.Add($"newgroup{newGroupNo}");
             newGroupNo++;
             Groups.SelectedItem = Groups.Items[newItem];
+        }
+        #endregion
+
+        #region Save and restart button methods
+
+        private void startAgainButton_Click(object sender, EventArgs e)
+        {
+            DialogResult confirmResult = MessageBox.Show($"Are you want to start again?\nThis cannot be undone.", "Please Confirm.", MessageBoxButtons.YesNo);
+            if (confirmResult == DialogResult.Yes)
+            {
+                groupList.Clear();
+                usersList.Clear();
+                groupNameList.Clear();
+                permissionsDict.Clear();
+                globalBadgeOptions.Clear();
+                Groups.Items.Clear();
+                restartProgram(tabControl);
+            }
+        }
+
+        private static void restartProgram(TabControl tabControl)
+        {            
+            foreach (TabPage tab in tabControl.TabPages)
+            {
+                savedTabPages.Add(tab);
+                tabControl.TabPages.Remove(tab);
+            }
+            tabControl.TabPages.Add(savedTabPages[0]);
+            savedTabPages.Remove(savedTabPages[0]);
         }
 
         private void saveCFGButton_Click(object sender, EventArgs e)
@@ -343,7 +413,9 @@ namespace Omicron_Pi
             File.WriteAllText(saveFileDialog1.FileName, finalConfig);
             MessageBox.Show("Your new config has been saved. Thank you for using Omicron Pi.");
         }
+        #endregion
 
+        #region Role settings methods
         private void badgeNameTextBox_TextChanged(object sender, EventArgs e)
         {
             groupList[selectedGroupIndex].badge = badgeNameTextBox.Text;
@@ -370,7 +442,9 @@ namespace Omicron_Pi
         {
             groupList[selectedGroupIndex].badgeColour = badgeColourComboBox.SelectedItem.ToString().ToLower().Replace(" ", "_");
         }
+        #endregion
 
+        #region Permissions methods
         private void permUpdate(object sender, EventArgs e)
         {
             CheckBox s = sender as CheckBox;
@@ -384,49 +458,27 @@ namespace Omicron_Pi
                 if (permissionsDict[s.Name].Contains(selectedGroup.name))
                     permissionsDict[s.Name].Remove(selectedGroup.name);
             }
-        }
-
-        private void globalBadgeOptionChanged(object sender, EventArgs e)
+        }        
+        private void selectAllButton_Click(object sender, EventArgs e)
         {
-            CheckBox s = sender as CheckBox;
-            globalBadgeOptions[s.Name] = s.Checked;
-        }
-
-        private void Groups_DoubleClick(object sender, EventArgs e)
-        {
-            ListBox listBox = sender as ListBox;
-            int index = listBox.IndexFromPoint(((MouseEventArgs)e).Location);
-            if (index != ListBox.NoMatches)
+            foreach (Control ctrl in tabPage2.Controls.Find("permissionsBox", false)[0].Controls)
             {
-                for (; ; )
-                {
-                    InputDlg frm = new InputDlg();
-                    Globals.inputResult = (string)listBox.SelectedItem;
-                    Globals.inputType = "role";
-                    frm.ShowDialog();
-                    if (frm.DialogResult == DialogResult.Cancel) break;
-                    if (groupList.Any(i => i.name == Globals.inputResult))
-                    {
-                        MessageBox.Show("A rank with that name already exists. Please choose a different name");
-                        continue;
-                    }
-                    foreach (KeyValuePair<string, List<string>> perm in permissionsDict)
-                    {
-                        if(perm.Value.Contains(listBox.SelectedItem))
-                        {
-                            perm.Value.Remove((string)listBox.SelectedItem);
-                            perm.Value.Add(Globals.inputResult);
-                        }
-                    }                    
-                    groupNameList.Remove(groupNameList.First(i => i == (string)listBox.SelectedItem));
-                    groupNameList.Add(Globals.inputResult);
-                    groupList[groupList.IndexOf(groupList.First(i => i.name == (string)listBox.SelectedItem))].name = Globals.inputResult;
-                    Groups.Items[listBox.SelectedIndex] = Globals.inputResult;
-                    break;
-                }
+                if (ctrl is CheckBox)
+                    ((CheckBox)ctrl).Checked = true;
             }
         }
 
+        private void deselectAllButton_Click(object sender, EventArgs e)
+        {
+            foreach (Control ctrl in tabPage2.Controls.Find("permissionsBox", false)[0].Controls)
+            {
+                if (ctrl is CheckBox)
+                    ((CheckBox)ctrl).Checked = false;
+            }
+        }
+        #endregion
+
+        #region Tab control methods
         private void updateComboBox(ComboBox cbox, List<string> data)
         {
             cbox.Items.Clear();
@@ -449,37 +501,9 @@ namespace Omicron_Pi
                 if (Users.Items.Count > 0) Users.SelectedIndex = 0;
             }
         }
+        #endregion
 
-        private void Form1_Shown(object sender, EventArgs e)
-        {
-            //Hide tabs that rent General
-            foreach (TabPage tab in tabControl.TabPages)
-            {
-                if (tab == tabControl.TabPages[0]) continue;
-                savedTabPages.Add(tab);
-                tabControl.TabPages.Remove(tab);
-            }
-
-            //Disable save and start again buttons untill a config file is chosen.
-            saveCFGButton.Enabled = false;
-            startAgainButton.Enabled = false;
-        }
-
-        private void startAgainButton_Click(object sender, EventArgs e)
-        {
-            DialogResult confirmResult = MessageBox.Show($"Are you want to start again?\nThis cannot be undone.", "Please Confirm.", MessageBoxButtons.YesNo);
-            if (confirmResult == DialogResult.Yes)
-            {
-                groupList.Clear();
-                usersList.Clear();
-                groupNameList.Clear();
-                permissionsDict.Clear();
-                globalBadgeOptions.Clear();
-                Groups.Items.Clear();
-                restartProgram(tabControl);
-            }
-        }
-
+        #region Role assignment section methods
         private void assignmentGroupsCombo_SelectedIndexChanged(object sender, EventArgs e)
         {
             ComboBox cb = sender as ComboBox;
@@ -537,47 +561,6 @@ namespace Omicron_Pi
             usersList[(string)Users.SelectedItem] = (string)changeGroupCombo.SelectedItem;
             Users.Items.Remove(Users.SelectedItem);
         }
-
-        private void openExistingConfigButton_Click(object sender, EventArgs e) => openFileDialog1.ShowDialog();
-        private void createNewConfigButton_Click(object sender, EventArgs e) => initialize(@".\TemplateConfig\DO NOT EDIT THIS FILE.txt");
-        private void openFileDialog1_FileOk(object sender, CancelEventArgs e)
-        {
-            if (openFileDialog1.FileName.Contains("config_remoteadmin.txt"))
-            {
-                initialize(openFileDialog1.FileName);
-                return;
-            }
-            MessageBox.Show("Please selecet an existing config_remoteadmin.txt");
-        }
-
-        private void selectAllButton_Click(object sender, EventArgs e)
-        {
-            foreach (Control ctrl in tabPage2.Controls.Find("permissionsBox", false)[0].Controls)
-            {
-                if(ctrl is CheckBox)                
-                    ((CheckBox)ctrl).Checked = true;                
-            }
-        }
-
-        private void deselectAllButton_Click(object sender, EventArgs e)
-        {
-            foreach (Control ctrl in tabPage2.Controls.Find("permissionsBox", false)[0].Controls)
-            {
-                if (ctrl is CheckBox)
-                    ((CheckBox)ctrl).Checked = false;
-            }
-        }
-
-        private void timer1_Tick(object sender, EventArgs e)
-        {
-            StringBuilder strb = new StringBuilder();
-            strb.AppendLine("Permissions:");
-            foreach (KeyValuePair<string, List<string>> perm in permissionsDict)
-            {
-                strb.AppendLine($" - {perm.Key}: [{string.Join(", ", perm.Value)}]");
-            }
-        }
-
         private void Users_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (!string.IsNullOrEmpty(steamApiKey) && showSteamInfoCheckBox.Checked)
@@ -596,11 +579,27 @@ namespace Omicron_Pi
                 steamUrlLabel.Text = player.profileurl;
             }
         }
+        #endregion
 
+        #region First page methods
+        private void openExistingConfigButton_Click(object sender, EventArgs e) => openFileDialog1.ShowDialog();
+        private void createNewConfigButton_Click(object sender, EventArgs e) => initialize(@".\TemplateConfig\DO NOT EDIT THIS FILE.txt");
+        private void openFileDialog1_FileOk(object sender, CancelEventArgs e)
+        {
+            if (openFileDialog1.FileName.Contains("config_remoteadmin.txt"))
+            {
+                initialize(openFileDialog1.FileName);
+                return;
+            }
+            MessageBox.Show("Please selecet an existing config_remoteadmin.txt");
+        }
+        #endregion
+
+        #region Steam info methods
         private Player getSteamInfo(string steamid, string key = "")
         {
             if (string.IsNullOrEmpty(key)) key = steamApiKey;
-            string ApiEndPoint = string.Format($"http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={key}&steamids={steamid}");
+            string ApiEndPoint = $"http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={key}&steamids={steamid}";
             WebRequest request = WebRequest.Create(ApiEndPoint);
             request.Method = "GET";
             WebResponse response = null;
@@ -624,24 +623,21 @@ namespace Omicron_Pi
         }
         private void enableSteamInfo_Click(object sender, EventArgs e)
         {
-            for (; ; )
+            InputDlg frm = new InputDlg();
+            Globals.inputType = "steamAPIKey";
+            frm.ShowDialog();
+            if (frm.DialogResult == DialogResult.Cancel) return;
+            if (getSteamInfo("76561197960287930", Globals.inputResult) == null)
             {
-                InputDlg frm = new InputDlg();
-                Globals.inputType = "steamAPIKey";
-                frm.ShowDialog();
-                if (frm.DialogResult == DialogResult.Cancel) break;
-                if (getSteamInfo("76561197960287930", Globals.inputResult) == null)
-                {
-                    MessageBox.Show($"The SteamAPI key you entered is invalid. Please try again.");
-                    continue;
-                }
-                File.WriteAllText("steamapikey", Globals.inputResult);
-                steamApiKey = Globals.inputResult;
-                enableSteamInfo.Hide();
-                showSteamInfoCheckBox.Show();
-                showSteamInfoCheckBox.Checked = true;
-                break;
+                MessageBox.Show($"The SteamAPI key you entered is invalid. Please try again.");
+                enableSteamInfo_Click(frm, null);
+                return;
             }
+            File.WriteAllText("steamapikey", Globals.inputResult);
+            steamApiKey = Globals.inputResult;
+            enableSteamInfo.Hide();
+            showSteamInfoCheckBox.Show();
+            showSteamInfoCheckBox.Checked = true;
         }
 
         private void showSteamInfoCheckBox_CheckedChanged(object sender, EventArgs e)
@@ -651,16 +647,14 @@ namespace Omicron_Pi
                 steamAvatar.Image = Resources.omipilogo;
                 steamUrlLabel.Text = "";
                 steamNameLabel.Text = "";
+                return;
             }
-            else
+            if (((string)Users.SelectedItem).Length == 23)
             {
-                if (((string)Users.SelectedItem).Length == 23)
-                {
-                    Player player = getSteamInfo(((string)Users.SelectedItem).Split('@')[0]);
-                    steamAvatar.ImageLocation = player.avatarfull;
-                    steamNameLabel.Text = player.personaname;
-                    steamUrlLabel.Text = player.profileurl;
-                }
+                Player player = getSteamInfo(((string)Users.SelectedItem).Split('@')[0]);
+                steamAvatar.ImageLocation = player.avatarfull;
+                steamNameLabel.Text = player.personaname;
+                steamUrlLabel.Text = player.profileurl;
             }
         }
 
@@ -669,5 +663,6 @@ namespace Omicron_Pi
             if(Uri.IsWellFormedUriString(((LinkLabel)sender).Text, UriKind.Absolute))
                 System.Diagnostics.Process.Start(((LinkLabel)sender).Text);
         }
+        #endregion
     }
 }
